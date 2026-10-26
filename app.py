@@ -37,4 +37,23 @@ if st.button("시뮬레이션 시작"):
             if current_temp >= 45.0 and throttling_time == -1:
                 throttling_time = minute
                 
-        # 4
+        # 4. 시각화 및 결과 출력
+        st.subheader("📈 시간에 따른 반도체 온도 변화 추이")
+        
+        df = pd.DataFrame({
+            "시간(분)": range(int(time_usage) + 1),
+            "온도(℃)": temp_history
+        })
+        df.set_index("시간(분)", inplace=True)
+        
+        # 스트림릿 내장 그래프 함수로 꺾은선 그래프 출력
+        st.line_chart(df)
+        
+        # 경고 메시지 출력
+        if throttling_time != -1:
+            st.error(f"⚠️ **성능 저하 주의!**\n\n사용 시작 **{throttling_time}분 후** 스마트폰 온도가 45℃를 초과하여 쓰로틀링이 발생할 것으로 예상됩니다. 잠시 기기 사용을 멈추고 열을 식혀주세요.")
+        else:
+            st.success("✅ 안전 범위입니다. 해당 사용 시간 동안은 성능 저하 없이 원활하게 사용할 수 있습니다.")
+            
+    except Exception as e:
+        st.error("데이터 처리 중 알 수 없는 오류가 발생했습니다. 입력값을 다시 확인해 주세요.")
