@@ -1,12 +1,22 @@
 import streamlit as st
 import pandas as pd
 
-# 1. 페이지 기본 설정 및 은은한 컬러 스킴 CSS 적용
+# 1. 페이지 기본 설정
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 커스텀 CSS (은은한 파스텔 인디고 & 슬레이트 대시보드 톤)
+# 은은한 파스텔 배경색 및 커스텀 CSS 적용 (조절 바 색상 강제 지정은 제거)
 st.markdown("""
     <style>
+    /* 전체 메인 화면 배경색 (은은한 쿨 그레이/파스텔 슬레이트) */
+    .stApp {
+        background-color: #F8FAFC;
+    }
+    
+    /* 사이드바 배경색 */
+    [data-testid="stSidebar"] {
+        background-color: #F1F5F9;
+    }
+
     /* 메인 타이틀 그라데이션 */
     .main-header {
         font-size: 2.1rem;
@@ -31,23 +41,14 @@ st.markdown("""
         margin-bottom: 5px;
     }
     
-    /* 슬라이더 및 입력 요소 인디고 블루 강제 스타일링 */
-    div[data-baseweb="slider"] * {
-        background-color: #6366F1 !important;
-    }
-    span[data-baseweb="tag"] {
-        background-color: #EEF2FF !important;
-        color: #4338CA !important;
-    }
-
-    /* 은은한 파스텔 메트릭 카드 */
+    /* 은은한 흰색 메트릭 카드 (배경과 대비감 확보) */
     .metric-card {
-        background-color: #F8FAFC;
+        background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-left: 5px solid #6366F1;
         border-radius: 12px;
         padding: 14px 16px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
     }
     .metric-label {
         color: #64748B;
@@ -72,7 +73,6 @@ with st.sidebar:
     st.header("⚙️ 기기 및 환경 설정")
     st.divider()
     
-    # 1) 기기 종류 선택 (스마트폰 vs 태블릿/패드)
     device_type = st.radio("기기 종류", ["스마트폰 📱", "태블릿 / 패드 📱"])
     
     st.markdown('<p class="sidebar-title">🌡️ 주변 환경 및 사용 시간</p>', unsafe_allow_html=True)
@@ -87,12 +87,12 @@ with st.sidebar:
     st.divider()
     st.caption("💡 설정을 변경하면 오른쪽 결과가 실시간으로 업데이트됩니다.")
 
-# 3. 알고리즘 가중치 설정 (기기 차이 + 앱 차이 + 밝기 + 충전)
+# 3. 시뮬레이션 알고리즘 가중치 설정
 if "태블릿" in device_type:
-    device_mult = 0.75  # 방열 면적이 커서 발열 축소
-    cooling_factor = 0.10 # 방열 효율 우수
+    device_mult = 0.75  # 태블릿은 넓은 방열 면적으로 발열 감소
+    cooling_factor = 0.10
 else:
-    device_mult = 1.00  # 스마트폰 기본값
+    device_mult = 1.00
     cooling_factor = 0.075
 
 if "메신저" in app_type:
@@ -101,7 +101,7 @@ elif "웹서핑" in app_type:
     base_increase = 0.7
 elif "동영상" in app_type:
     base_increase = 1.3
-else: # 3D 게임
+else:
     base_increase = 2.3
 
 brightness_increase = (brightness / 100.0) * 0.5
@@ -115,14 +115,13 @@ else:
 
 total_increase = (base_increase + brightness_increase + charge_increase) * device_mult
 
-# 4. 실시간 시뮬레이션 계산
+# 4. 실시간 온도로직 시뮬레이션
 current_temp = temp_env
 temp_history = [current_temp]
 throttling_time = -1
 
 try:
     for minute in range(1, int(time_usage) + 1):
-        # 45도 초과 시 AP 쓰로틀링(성능 및 전력 제어) 작동
         if current_temp >= 45.0:
             effective_increase = total_increase * 0.45
             if throttling_time == -1:
@@ -149,28 +148,13 @@ try:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <p class="metric-label">최고 도달 온도</p>
-            <p class="metric-value">{max_t} ℃</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><p class="metric-label">최고 도달 온도</p><p class="metric-value">{max_t} ℃</p></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <p class="metric-label">사용 후 최종 온도</p>
-            <p class="metric-value">{final_t} ℃</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><p class="metric-label">사용 후 최종 온도</p><p class="metric-value">{final_t} ℃</p></div>', unsafe_allow_html=True)
     with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <p class="metric-label">쓰로틀링 시작</p>
-            <p class="metric-value">{th_t}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><p class="metric-label">쓰로틀링 시작</p><p class="metric-value">{th_t}</p></div>', unsafe_allow_html=True)
     
-    # 꺾은선 그래프 (소프트 인디고 & 파스텔 레드 기준선)
+    # 꺾은선 그래프
     df = pd.DataFrame({
         "시간(분)": range(int(time_usage) + 1),
         "예상 온도(℃)": temp_history,
@@ -181,7 +165,7 @@ try:
     st.markdown("<br>", unsafe_allow_html=True)
     st.line_chart(df, color=["#6366F1", "#F87171"])
     
-    # 6. 경고 메시지 및 기기/앱별 맞춤 쿨링 가이드
+    # 6. 경고 메시지 및 쿨링 가이드
     if throttling_time != -1:
         warning_msg = f"🚨 **경고!** 사용 시작 **{throttling_time}분** 후 {device_type.split()[0]} 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 시작됩니다."
         st.error(warning_msg)
