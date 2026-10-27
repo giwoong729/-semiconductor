@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
 
-# 1. 페이지 기본 설정 및 감각적인 CSS 디자인 적용
+# 1. 페이지 기본 설정 및 디자인 스타일 지정
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 부분적인 색상 포인트 및 스타일링 (과하지 않은 트렌디한 대시보드 스타일)
+# 커스텀 CSS (제목 그라데이션 및 레이아웃 정돈)
 st.markdown("""
     <style>
-    /* 상단 타이틀 그라데이션 포인트 */
     .main-header {
-        font-size: 2.2rem;
+        font-size: 2.1rem;
         font-weight: 800;
         background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
         -webkit-background-clip: text;
@@ -23,19 +22,7 @@ st.markdown("""
         text-align: center;
         margin-bottom: 25px;
     }
-    
-    /* 결과 지표 카드 디자인 (좌측 세로 파란 포인트 선) */
-    div[data-testid="metric-container"] {
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-left: 4px solid #3B82F6;
-        border-radius: 12px;
-        padding: 12px 16px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    
-    /* 사이드바 그룹 소제목 */
-    .sidebar-section-title {
+    .sidebar-title {
         font-size: 0.95rem;
         font-weight: 700;
         color: #1E293B;
@@ -46,37 +33,50 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-header">📱 모바일 AP 온도 시뮬레이터</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">충전 상태와 화면 밝기까지 반영한 실시간 스마트폰 발열 예측 시스템</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">기기 종류, 충전 상태, 사용 조건에 따른 실시간 발열 분석 대시보드</p>', unsafe_allow_html=True)
 
-# 2. 사이드바 구성 (신규 항목 추가: 밝기, 충전 상태)
+# 2. 사이드바 구성 (기기 선택, 앱 종류, 환경 조건)
 with st.sidebar:
-    st.header("⚙️ 환경 및 기기 설정")
+    st.header("⚙️ 기기 및 환경 설정")
     st.divider()
     
+    # 1) 기기 종류 선택 (스마트폰 vs 태블릿/패드)
+    device_type = st.radio("기기 종류", ["스마트폰 📱", "태블릿 / 패드 📱"])
+    
+    st.markdown('<p class="sidebar-title">🌡️ 주변 환경 및 사용 시간</p>', unsafe_allow_html=True)
     temp_env = st.slider("현재 주변 온도 (℃)", min_value=-10.0, max_value=40.0, value=25.0, step=1.0)
     time_usage = st.slider("예상 사용 시간 (분)", min_value=10, max_value=300, value=60, step=10)
     
-    st.markdown('<p class="sidebar-section-title">📱 세부 사용 조건</p>', unsafe_allow_html=True)
-    app_type = st.radio("실행할 앱 종류", ["단순 웹서핑 🌐", "고화질 동영상 시청 🎬", "3D 고사양 게임 🎮"])
+    st.markdown('<p class="sidebar-title">⚡ 세부 사용 조건</p>', unsafe_allow_html=True)
+    app_type = st.radio("실행할 앱 종류", ["메신저 / SNS 💬", "단순 웹서핑 🌐", "고화질 동영상 시청 🎬", "3D 고사양 게임 🎮"])
     brightness = st.slider("화면 밝기 (%)", min_value=10, max_value=100, value=70, step=10)
     charge_type = st.selectbox("충전 상태", ["미충전 🔋", "일반 충전 🔌", "고속 충전 ⚡"])
 
     st.divider()
-    st.caption("💡 설정을 변경하면 오른쪽 대시보드가 실시간으로 업데이트됩니다.")
+    st.caption("💡 설정을 변경하면 오른쪽 결과가 실시간으로 업데이트됩니다.")
 
-# 3. 발열 계산 알고리즘 (앱 부하 + 밝기 발열 + 충전 회로 발열)
-# ① 앱 종류 기본 발열
-if "웹서핑" in app_type:
+# 3. 알고리즘 가중치 설정 (기기 차이 + 앱 차이 + 밝기 + 충전)
+# ① 기기 형태별 방열 및 부하 특성 (태블릿은 방열 면적이 커서 온도가 천천히 오르고 냉각이 잘 됨)
+if "태블릿" in device_type:
+    device_mult = 0.75  # 발열 축소율
+    cooling_factor = 0.10 # 방열 효율 우수
+else:
+    device_mult = 1.00  # 스마트폰 기본값
+    cooling_factor = 0.075
+
+# ② 앱 종류별 기본 발열
+if "메신저" in app_type:
+    base_increase = 0.4
+elif "웹서핑" in app_type:
     base_increase = 0.7
 elif "동영상" in app_type:
     base_increase = 1.3
-else:
+else: # 3D 게임
     base_increase = 2.3
 
-# ② 화면 밝기 추가 발열 (10%~100% -> 0.05 ~ 0.5°C/분 추가)
+# ③ 화면 밝기 및 충전 추가 발열량
 brightness_increase = (brightness / 100.0) * 0.5
 
-# ③ 충전 상태 추가 발열 (고속 충전은 충전 IC 회로 발열이 매우 큼)
 if "고속" in charge_type:
     charge_increase = 1.1
 elif "일반" in charge_type:
@@ -84,8 +84,8 @@ elif "일반" in charge_type:
 else:
     charge_increase = 0.0
 
-# 총 발열 수치 합산
-total_increase = base_increase + brightness_increase + charge_increase
+# 총 발열 수치 계산 (기기 특성 반영)
+total_increase = (base_increase + brightness_increase + charge_increase) * device_mult
 
 # 4. 실시간 시뮬레이션 계산
 current_temp = temp_env
@@ -94,7 +94,7 @@ throttling_time = -1
 
 try:
     for minute in range(1, int(time_usage) + 1):
-        # 45도 초과 시 AP 쓰로틀링(전력 및 성능 제어) 작동
+        # 45도 초과 시 AP 쓰로틀링(성능 및 전력 제한) 작동
         if current_temp >= 45.0:
             effective_increase = total_increase * 0.45
             if throttling_time == -1:
@@ -103,29 +103,55 @@ try:
             effective_increase = total_increase
 
         # 자연 방열 계산
-        cooling_effect = (current_temp - temp_env) * 0.075
+        cooling_effect = (current_temp - temp_env) * cooling_factor
         current_temp = current_temp + effective_increase - cooling_effect
         
-        # 하드웨어 최대 제한 온도 설정
+        # 하드웨어 최고 제한 온도
         if current_temp > 62.0:
             current_temp = 62.0
             
         temp_history.append(current_temp)
 
-    # 5. 결과 대시보드 출력
+    # 5. 결과 대시보드 출력 (확실히 눈에 보이는 파란색 포인트 카드 적용)
     st.divider()
     st.subheader("📊 시뮬레이션 분석 대시보드")
     
+    max_t = str(round(max(temp_history), 1))
+    final_t = str(round(temp_history[-1], 1))
+    th_t = str(throttling_time) + " 분" if throttling_time != -1 else "안전 (미발생)"
+
+    # HTML 커스텀 스타일 카드로 3단 지표 시각화
     col1, col2, col3 = st.columns(3)
-    col1.metric("최고 도달 온도", str(round(max(temp_history), 1)) + " ℃")
-    col2.metric("사용 후 최종 온도", str(round(temp_history[-1], 1)) + " ℃")
     
-    if throttling_time != -1:
-        col3.metric("쓰로틀링 시작 시점", str(throttling_time) + " 분")
-    else:
-        col3.metric("쓰로틀링 시작 시점", "안전 (미발생)")
+    card_html_1 = """
+    <div style="background-color: #F0F7FF; border-left: 5px solid #2563EB; border-radius: 10px; padding: 12px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+        <p style="color: #64748B; font-size: 0.8rem; margin:0; font-weight: 600;">최고 도달 온도</p>
+        <p style="color: #1E293B; font-size: 1.5rem; margin: 4px 0 0 0; font-weight: 800;">""" + max_t + """ ℃</p>
+    </div>
+    """
     
-    # 그래프 데이터 구성
+    card_html_2 = """
+    <div style="background-color: #F0F7FF; border-left: 5px solid #2563EB; border-radius: 10px; padding: 12px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+        <p style="color: #64748B; font-size: 0.8rem; margin:0; font-weight: 600;">사용 후 최종 온도</p>
+        <p style="color: #1E293B; font-size: 1.5rem; margin: 4px 0 0 0; font-weight: 800;">""" + final_t + """ ℃</p>
+    </div>
+    """
+    
+    card_html_3 = """
+    <div style="background-color: #F0F7FF; border-left: 5px solid #2563EB; border-radius: 10px; padding: 12px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+        <p style="color: #64748B; font-size: 0.8rem; margin:0; font-weight: 600;">쓰로틀링 시작</p>
+        <p style="color: #1E293B; font-size: 1.5rem; margin: 4px 0 0 0; font-weight: 800;">""" + th_t + """</p>
+    </div>
+    """
+
+    with col1:
+        st.markdown(card_html_1, unsafe_allow_html=True)
+    with col2:
+        st.markdown(card_html_2, unsafe_allow_html=True)
+    with col3:
+        st.markdown(card_html_3, unsafe_allow_html=True)
+    
+    # 꺾은선 그래프 출력
     df = pd.DataFrame({
         "시간(분)": range(int(time_usage) + 1),
         "예상 온도(℃)": temp_history,
@@ -137,33 +163,37 @@ try:
     # 파란색 (온도 변화 선), 빨간색 (위험 기준선)
     st.line_chart(df, color=["#2563EB", "#EF4444"])
     
-    # 6. 경고 및 동적 맞춤형 쿨링 가이드
+    # 6. 경고 메시지 및 기기/앱별 맞춤 쿨링 가이드
     if throttling_time != -1:
-        warning_msg = "🚨 **경고!** 사용 시작 **" + str(throttling_time) + "분** 후 스마트폰 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 작동합니다."
+        warning_msg = "🚨 **경고!** 사용 시작 **" + str(throttling_time) + "분** 후 " + device_type.split()[0] + " 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 시작됩니다."
         st.error(warning_msg)
         
         with st.expander("❄️ 조건별 맞춤형 쿨링 가이드 보기", expanded=True):
-            # 앱 종류별 가이드
-            if "웹서핑" in app_type:
-                st.write("• **🌐 웹서핑:** 브라우저 백그라운드 탭을 정리하고 다크 모드를 켜서 AP 연산을 줄이세요.")
-            elif "동영상" in app_type:
-                st.write("• **🎬 동영상:** 스트리밍 해상도를 1080p 이하로 맞추고 데이터 모뎀 사용을 줄이세요.")
+            # 기기 종류 가이드
+            if "태블릿" in device_type:
+                st.write("• **📱 태블릿/패드 방열:** 거치대를 사용해 후면 알루미늄/글래스 바디 전체에 공기가 통하도록 띄워주면 방열 효과가 극대화됩니다.")
             else:
-                st.write("• **🎮 3D 게임:** 게임 내 옵션에서 프레임을 30fps로 변경하고 그래픽 설정을 하향하세요.")
+                st.write("• **📱 스마트폰 방열:** 열 방출을 막는 밀착형 파우치나 두꺼운 범퍼 케이스를 벗겨주세요.")
+
+            # 앱 종류별 가이드
+            if "메신저" in app_type:
+                st.write("• **💬 메신저/SNS:** 미디어 자동 다운로드 옵션을 끄고 백그라운드 동영상 자동 재생을 제한하세요.")
+            elif "웹서핑" in app_type:
+                st.write("• **🌐 웹서핑:** 브라우저 백그라운드 탭을 정리하고 다크 모드를 설정하세요.")
+            elif "동영상" in app_type:
+                st.write("• **🎬 동영상:** 스트리밍 해상도를 한 단계 낮추고 화면 밝기를 조절하세요.")
+            else:
+                st.write("• **🎮 3D 게임:** 게임 옵션에서 그래픽 품질 및 프레임(FPS)을 하향 조정하세요.")
             
-            # 밝기 조건 가이드
+            # 밝기 및 충전 가이드
             if brightness >= 70:
-                st.write("• **☀️ 화면 밝기 (" + str(brightness) + "%):** 현재 화면 밝기가 높습니다. 밝기를 50% 이하로 낮추면 디스플레이 발열이 크게 줄어듭니다.")
-            
-            # 충전 조건 가이드
-            if "고속" in charge_type:
-                st.write("• **⚡ 고속 충전 중:** 고속 충전 회로의 발열이 매우 심합니다. **고사양 작업 시에는 반드시 충전 케이블을 분리**해 주세요.")
-            elif "일반" in charge_type:
-                st.write("• **🔌 일반 충전 중:** 충전과 기기 사용이 동시 진행되면 배터리 수명이 줄고 발열이 가중됩니다. 완충 후 사용을 권장합니다.")
-            
-            st.caption("⚠️ **주의:** 냉장고나 얼음팩을 활용한 급격한 냉각은 내부 결로 현상을 발생시켜 메인보드 고장의 원인이 됩니다.")
+                st.write("• **☀️ 화면 밝기 (" + str(brightness) + "%):** 디스플레이 면적이 넓을수록 발열이 커집니다. 밝기를 낮춰주세요.")
+            if "충전" in charge_type and "미충전" not in charge_type:
+                st.write("• **🔌 충전 중 사용:** 고사양 작업이나 영상 시청 시 충전 케이블을 분리하는 것이 기기 수명과 발열 제어에 좋습니다.")
+
+            st.caption("⚠️ **주의:** 급격히 식히기 위해 냉장고에 넣으면 내부 결로 현상으로 부품이 부식될 수 있습니다.")
     else:
-        st.success("✨ **안정적인 상태입니다.** 현재 설정 조건에서는 성능 저하 없이 원활하게 구동 가능합니다.")
+        st.success("✨ **안정적인 상태입니다.** 현재 설정한 기기 조건에서는 성능 저하 없이 원활하게 구동 가능합니다.")
 
 except Exception as e:
     st.error("데이터 처리 중 오류가 발생했습니다. 환경 설정 값을 다시 확인해 주세요.")
