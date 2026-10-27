@@ -1,46 +1,77 @@
 import streamlit as st
 import pandas as pd
+import time
 
-# 1. 화면 제목 및 안내
-st.title("📱 스마트폰 모바일 AP 온도 관리 시뮬레이터")
-st.write("사용할 앱의 종류와 주변 환경을 입력하면, 스마트폰 반도체의 예상 온도 변화와 성능 저하(쓰로틀링) 시점을 예측해 줍니다.")
+# 1. 페이지 기본 설정 (감각적인 레이아웃)
+st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 2. 사용자 입력 (UI 및 예외 처리를 위한 제약 조건 설정)
-st.sidebar.header("환경 설정")
-temp_env = st.sidebar.number_input("현재 주변 온도 (℃)", min_value=-20.0, max_value=60.0, value=25.0, step=1.0)
-time_usage = st.sidebar.number_input("예상 사용 시간 (분)", min_value=1, max_value=300, value=30, step=10)
-app_type = st.sidebar.selectbox("실행할 앱 종류", ["단순 웹서핑", "고화질 동영상 시청", "3D 고사양 게임"])
+# 커스텀 CSS 적용 (UI 디자인 개선)
+st.markdown("""
+    <style>
+    .main-header { font-size: 2.2rem; color: #1E3A8A; font-weight: 800; text-align: center; margin-bottom: 0px; }
+    .sub-header { font-size: 1rem; color: #6B7280; text-align: center; margin-bottom: 30px; }
+    div[data-testid="metric-container"] { background-color: #F9FAFB; padding: 15px; border-radius: 10px; border: 1px solid #E5E7EB; }
+    </style>
+""", unsafe_allow_html=True)
 
-# 앱 부하 수준에 따른 1분당 발열 증가량 설정
-if app_type == "단순 웹서핑":
-    temp_increase = 0.2
-elif app_type == "고화질 동영상 시청":
-    temp_increase = 0.5
+st.markdown('<p class="main-header">📱 모바일 AP 온도 시뮬레이터</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">스마트폰 사용 환경에 따른 반도체 발열과 성능 저하 시점을 예측합니다.</p>', unsafe_allow_html=True)
+
+# 2. 사이드바 디자인
+with st.sidebar:
+    st.header("⚙️ 환경 설정")
+    st.divider()
+    # 슬라이더로 변경하여 조작감을 높임
+    temp_env = st.slider("현재 주변 온도 (℃)", min_value=-10.0, max_value=40.0, value=25.0, step=1.0)
+    time_usage = st.slider("예상 사용 시간 (분)", min_value=10, max_value=300, value=60, step=10)
+    app_type = st.radio("실행할 앱 종류", ["단순 웹서핑 🌐", "고화질 동영상 시청 🎬", "3D 고사양 게임 🎮"])
+    
+    st.divider()
+    st.info("💡 사용 시간이 길거나 주변 온도가 높을수록 45℃ 한계점에 빠르게 도달합니다.")
+
+# 앱 부하 수준에 따른 발열량 상향 조정 (모든 항목이 장시간 사용 시 45도를 넘을 수 있도록 수정)
+if "웹서핑" in app_type:
+    temp_increase = 0.8
+elif "동영상" in app_type:
+    temp_increase = 1.3
 else:
-    temp_increase = 1.2
+    temp_increase = 2.2
 
-# 3. 데이터 처리 및 알고리즘 시뮬레이션
-if st.button("시뮬레이션 시작"):
+# 3. 시뮬레이션 실행 및 결과 화면
+if st.button("🚀 시뮬레이션 시작", use_container_width=True):
+    # 로딩 애니메이션
+    with st.spinner("알고리즘을 통해 반도체 온도 변화를 계산 중입니다..."):
+        time.sleep(0.8) 
+    
     current_temp = temp_env
     temp_history = [current_temp]
     throttling_time = -1
     
     try:
-        # 사용 시간만큼 반복하며 1분 단위 온도 계산
+        # 발열 시뮬레이션 알고리즘
         for minute in range(1, int(time_usage) + 1):
-            cooling_effect = (current_temp - temp_env) * 0.05
+            # 온도가 더 쉽게 오르도록 냉각 효과 계수를 낮춤 (0.05 -> 0.03)
+            cooling_effect = (current_temp - temp_env) * 0.03
             current_temp = current_temp + temp_increase - cooling_effect
-            
             temp_history.append(current_temp)
             
-            # 성능 저하 한계점(45도) 초과 여부 검사
             if current_temp >= 45.0 and throttling_time == -1:
                 throttling_time = minute
                 
-        # 4. 시각화 및 결과 출력
-        st.subheader("📈 시간에 따른 반도체 온도 변화 추이")
+        # 4. 결과 대시보드 레이아웃
+        st.divider()
+        st.subheader("📊 시뮬레이션 결과 요약")
         
-        # 위험 기준선(45도)을 그래프에 함께 표시하기 위해 데이터프레임 열 추가
+        # 3단 컬럼을 활용한 핵심 지표 시각화
+        col1, col2, col3 = st.columns(3)
+        col1.metric("최고 도달 온도", f"{max(temp_history):.1f} ℃")
+        col2.metric("사용 후 최종 온도", f"{temp_history[-1]:.1f} ℃")
+        if throttling_time != -1:
+            col3.metric("쓰로틀링 시작 시점", f"{throttling_time} 분")
+        else:
+            col3.metric("쓰로틀링 시작 시점", "안전 (미발생)")
+        
+        # 꺾은선 그래프
         df = pd.DataFrame({
             "시간(분)": range(int(time_usage) + 1),
             "예상 온도(℃)": temp_history,
@@ -48,22 +79,9 @@ if st.button("시뮬레이션 시작"):
         })
         df.set_index("시간(분)", inplace=True)
         
-        # 스트림릿 내장 그래프 함수에 color 옵션을 주어 선 색상 변경 
-        # (첫 번째 열 '예상 온도'는 파란색 계열, 두 번째 열 '위험 기준선'은 빨간색으로 지정)
-        st.line_chart(df, color=["#1f77b4", "#FF0000"])
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.line_chart(df, color=["#3B82F6", "#EF4444"])
         
-        # 경고 메시지 및 쿨링 가이드 출력
+        # 경고 및 쿨링 가이드 (토글 패널 적용)
         if throttling_time != -1:
-            st.error(f"⚠️ **성능 저하 주의!**\n\n사용 시작 **{throttling_time}분 후** 스마트폰 온도가 45℃를 초과하여 쓰로틀링이 발생할 것으로 예상됩니다.")
-            st.info("""
-            💡 **올바른 스마트폰 쿨링 방법 가이드**
-            1. **케이스 분리:** 두꺼운 스마트폰 케이스를 벗겨 내부 열이 외부로 빠르게 방출되도록 돕습니다.
-            2. **백그라운드 앱 및 화면 밝기 제어:** 실행 중인 고사양 앱을 종료하고 화면 밝기를 낮추어 AP와 디스플레이의 발열을 줄입니다.
-            3. **서늘한 곳에서 자연 냉각:** 선풍기 바람이나 그늘진 곳에 두어 서서히 식혀줍니다. 
-            *(※ 주의: 기기를 빨리 식히려고 냉장고나 냉동실에 넣으면 내부 반도체 부품에 결로(물방울)가 맺혀 고장 날 수 있으니 절대 피하세요!)*
-            """)
-        else:
-            st.success("✅ 안전 범위입니다. 해당 사용 시간 동안은 성능 저하 없이 원활하게 사용할 수 있습니다.")
-            
-    except Exception as e:
-        st.error("데이터 처리 중 알 수 없는 오류가 발생했습니다. 입력값을 다시 확인해 주세요.")
+            st.error(f"🚨 **경고!** 사용 시작 **{throttling_time}분** 후
