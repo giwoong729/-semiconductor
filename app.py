@@ -4,10 +4,33 @@ import pandas as pd
 # 1. 페이지 기본 설정 및 은은한 컬러 스킴 CSS 적용
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 커스텀 CSS (은은하고 감각적인 인디고/파스텔 블루 톤)
+# 커스텀 CSS (스트림릿 전역 변수 override로 주황색 완벽 제거)
 st.markdown("""
     <style>
-    /* 은은한 그라데이션 메인 타이틀 */
+    /* 1. 스트림릿 전역 주 테마 색상(Primary Color) 강제 변경 */
+    :root, [data-testid="stAppViewContainer"] {
+        --primary-color: #6366F1 !important;
+    }
+    
+    /* 2. 슬라이더(조절 바) 트랙 및 핸들 색상 강제 적용 */
+    div[data-testid="stSlider"] div[role="slider"] {
+        background-color: #6366F1 !important;
+        border-color: #6366F1 !important;
+    }
+    div[data-testid="stSlider"] div[data-baseweb="slider"] > div > div {
+        background-color: #6366F1 !important;
+    }
+    
+    /* 3. 라디오 버튼 선택 시 색상 강제 적용 */
+    div[data-testid="stRadioButton"] div[role="radiogroup"] label div[aria-checked="true"] {
+        background-color: #6366F1 !important;
+        border-color: #6366F1 !important;
+    }
+    div[data-testid="stRadioButton"] div[role="radiogroup"] label div[aria-checked="true"] > div {
+        background-color: #FFFFFF !important;
+    }
+
+    /* 4. 메인 타이틀 및 기타 디자인 요소 */
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
@@ -31,21 +54,7 @@ st.markdown("""
         margin-bottom: 5px;
     }
     
-    /* 슬라이더 및 입력 조절 바 색상 변경 (기존 주황색 -> 은은한 인디고 블루) */
-    div[data-baseweb="slider"] div {
-        background-color: #6366F1 !important;
-    }
-    div[data-baseweb="slider"] div[role="slider"] {
-        background-color: #4338CA !important;
-        border-color: #4338CA !important;
-    }
-    /* 라디오 버튼 선택 색상 스타일링 */
-    div[role="radiogroup"] div[data-baseweb="radio"] input:checked + div {
-        background-color: #4338CA !important;
-        border-color: #4338CA !important;
-    }
-
-    /* 은은한 대시보드 지표 카드 디자인 */
+    /* 은은한 대시보드 지표 카드 */
     .metric-card {
         background-color: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -143,7 +152,7 @@ try:
             
         temp_history.append(current_temp)
 
-    # 5. 결과 대시보드 출력 (은은한 카드로 변경)
+    # 5. 결과 대시보드 출력
     st.divider()
     st.subheader("📊 시뮬레이션 분석 대시보드")
     
