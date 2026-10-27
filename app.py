@@ -4,33 +4,10 @@ import pandas as pd
 # 1. 페이지 기본 설정 및 은은한 컬러 스킴 CSS 적용
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 커스텀 CSS (스트림릿 전역 변수 override로 주황색 완벽 제거)
+# 커스텀 CSS (은은한 파스텔 인디고 & 슬레이트 대시보드 톤)
 st.markdown("""
     <style>
-    /* 1. 스트림릿 전역 주 테마 색상(Primary Color) 강제 변경 */
-    :root, [data-testid="stAppViewContainer"] {
-        --primary-color: #6366F1 !important;
-    }
-    
-    /* 2. 슬라이더(조절 바) 트랙 및 핸들 색상 강제 적용 */
-    div[data-testid="stSlider"] div[role="slider"] {
-        background-color: #6366F1 !important;
-        border-color: #6366F1 !important;
-    }
-    div[data-testid="stSlider"] div[data-baseweb="slider"] > div > div {
-        background-color: #6366F1 !important;
-    }
-    
-    /* 3. 라디오 버튼 선택 시 색상 강제 적용 */
-    div[data-testid="stRadioButton"] div[role="radiogroup"] label div[aria-checked="true"] {
-        background-color: #6366F1 !important;
-        border-color: #6366F1 !important;
-    }
-    div[data-testid="stRadioButton"] div[role="radiogroup"] label div[aria-checked="true"] > div {
-        background-color: #FFFFFF !important;
-    }
-
-    /* 4. 메인 타이틀 및 기타 디자인 요소 */
+    /* 메인 타이틀 그라데이션 */
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
@@ -54,14 +31,23 @@ st.markdown("""
         margin-bottom: 5px;
     }
     
-    /* 은은한 대시보드 지표 카드 */
+    /* 슬라이더 및 입력 요소 인디고 블루 강제 스타일링 */
+    div[data-baseweb="slider"] * {
+        background-color: #6366F1 !important;
+    }
+    span[data-baseweb="tag"] {
+        background-color: #EEF2FF !important;
+        color: #4338CA !important;
+    }
+
+    /* 은은한 파스텔 메트릭 카드 */
     .metric-card {
         background-color: #F8FAFC;
         border: 1px solid #E2E8F0;
         border-left: 5px solid #6366F1;
         border-radius: 12px;
         padding: 14px 16px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
     }
     .metric-label {
         color: #64748B;
