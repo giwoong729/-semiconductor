@@ -40,13 +40,15 @@ if st.button("시뮬레이션 시작"):
         # 4. 시각화 및 결과 출력
         st.subheader("📈 시간에 따른 반도체 온도 변화 추이")
         
+        # 위험 기준선(45도)을 그래프에 함께 표시하기 위해 데이터프레임 열 추가
         df = pd.DataFrame({
             "시간(분)": range(int(time_usage) + 1),
-            "온도(℃)": temp_history
+            "예상 온도(℃)": temp_history,
+            "위험 기준선(45℃)": [45.0] * (int(time_usage) + 1)
         })
         df.set_index("시간(분)", inplace=True)
         
-        # 스트림릿 내장 그래프 함수로 꺾은선 그래프 출력
+        # 스트림릿 내장 그래프 함수로 온도 변화와 45도 기준선을 함께 출력
         st.line_chart(df)
         
         # 경고 메시지 출력
