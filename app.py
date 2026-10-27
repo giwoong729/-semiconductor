@@ -1,16 +1,17 @@
 import streamlit as st
 import pandas as pd
 
-# 1. 페이지 기본 설정 및 디자인 스타일 지정
+# 1. 페이지 기본 설정 및 은은한 컬러 스킴 CSS 적용
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 커스텀 CSS (제목 그라데이션 및 레이아웃 정돈)
+# 커스텀 CSS (은은하고 감각적인 인디고/파스텔 블루 톤)
 st.markdown("""
     <style>
+    /* 은은한 그라데이션 메인 타이틀 */
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+        background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
@@ -25,9 +26,45 @@ st.markdown("""
     .sidebar-title {
         font-size: 0.95rem;
         font-weight: 700;
-        color: #1E293B;
+        color: #334155;
         margin-top: 15px;
         margin-bottom: 5px;
+    }
+    
+    /* 슬라이더 및 입력 조절 바 색상 변경 (기존 주황색 -> 은은한 인디고 블루) */
+    div[data-baseweb="slider"] div {
+        background-color: #6366F1 !important;
+    }
+    div[data-baseweb="slider"] div[role="slider"] {
+        background-color: #4338CA !important;
+        border-color: #4338CA !important;
+    }
+    /* 라디오 버튼 선택 색상 스타일링 */
+    div[role="radiogroup"] div[data-baseweb="radio"] input:checked + div {
+        background-color: #4338CA !important;
+        border-color: #4338CA !important;
+    }
+
+    /* 은은한 대시보드 지표 카드 디자인 */
+    .metric-card {
+        background-color: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-left: 5px solid #6366F1;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+    .metric-label {
+        color: #64748B;
+        font-size: 0.82rem;
+        margin: 0;
+        font-weight: 600;
+    }
+    .metric-value {
+        color: #1E293B;
+        font-size: 1.45rem;
+        margin: 4px 0 0 0;
+        font-weight: 800;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -56,15 +93,13 @@ with st.sidebar:
     st.caption("💡 설정을 변경하면 오른쪽 결과가 실시간으로 업데이트됩니다.")
 
 # 3. 알고리즘 가중치 설정 (기기 차이 + 앱 차이 + 밝기 + 충전)
-# ① 기기 형태별 방열 및 부하 특성 (태블릿은 방열 면적이 커서 온도가 천천히 오르고 냉각이 잘 됨)
 if "태블릿" in device_type:
-    device_mult = 0.75  # 발열 축소율
+    device_mult = 0.75  # 방열 면적이 커서 발열 축소
     cooling_factor = 0.10 # 방열 효율 우수
 else:
     device_mult = 1.00  # 스마트폰 기본값
     cooling_factor = 0.075
 
-# ② 앱 종류별 기본 발열
 if "메신저" in app_type:
     base_increase = 0.4
 elif "웹서핑" in app_type:
@@ -74,7 +109,6 @@ elif "동영상" in app_type:
 else: # 3D 게임
     base_increase = 2.3
 
-# ③ 화면 밝기 및 충전 추가 발열량
 brightness_increase = (brightness / 100.0) * 0.5
 
 if "고속" in charge_type:
@@ -84,7 +118,6 @@ elif "일반" in charge_type:
 else:
     charge_increase = 0.0
 
-# 총 발열 수치 계산 (기기 특성 반영)
 total_increase = (base_increase + brightness_increase + charge_increase) * device_mult
 
 # 4. 실시간 시뮬레이션 계산
@@ -94,7 +127,7 @@ throttling_time = -1
 
 try:
     for minute in range(1, int(time_usage) + 1):
-        # 45도 초과 시 AP 쓰로틀링(성능 및 전력 제한) 작동
+        # 45도 초과 시 AP 쓰로틀링(성능 및 전력 제어) 작동
         if current_temp >= 45.0:
             effective_increase = total_increase * 0.45
             if throttling_time == -1:
@@ -102,17 +135,15 @@ try:
         else:
             effective_increase = total_increase
 
-        # 자연 방열 계산
         cooling_effect = (current_temp - temp_env) * cooling_factor
         current_temp = current_temp + effective_increase - cooling_effect
         
-        # 하드웨어 최고 제한 온도
         if current_temp > 62.0:
             current_temp = 62.0
             
         temp_history.append(current_temp)
 
-    # 5. 결과 대시보드 출력 (확실히 눈에 보이는 파란색 포인트 카드 적용)
+    # 5. 결과 대시보드 출력 (은은한 카드로 변경)
     st.divider()
     st.subheader("📊 시뮬레이션 분석 대시보드")
     
@@ -120,38 +151,31 @@ try:
     final_t = str(round(temp_history[-1], 1))
     th_t = str(throttling_time) + " 분" if throttling_time != -1 else "안전 (미발생)"
 
-    # HTML 커스텀 스타일 카드로 3단 지표 시각화
     col1, col2, col3 = st.columns(3)
     
-    card_html_1 = """
-    <div style="background-color: #F0F7FF; border-left: 5px solid #2563EB; border-radius: 10px; padding: 12px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-        <p style="color: #64748B; font-size: 0.8rem; margin:0; font-weight: 600;">최고 도달 온도</p>
-        <p style="color: #1E293B; font-size: 1.5rem; margin: 4px 0 0 0; font-weight: 800;">""" + max_t + """ ℃</p>
-    </div>
-    """
-    
-    card_html_2 = """
-    <div style="background-color: #F0F7FF; border-left: 5px solid #2563EB; border-radius: 10px; padding: 12px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-        <p style="color: #64748B; font-size: 0.8rem; margin:0; font-weight: 600;">사용 후 최종 온도</p>
-        <p style="color: #1E293B; font-size: 1.5rem; margin: 4px 0 0 0; font-weight: 800;">""" + final_t + """ ℃</p>
-    </div>
-    """
-    
-    card_html_3 = """
-    <div style="background-color: #F0F7FF; border-left: 5px solid #2563EB; border-radius: 10px; padding: 12px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-        <p style="color: #64748B; font-size: 0.8rem; margin:0; font-weight: 600;">쓰로틀링 시작</p>
-        <p style="color: #1E293B; font-size: 1.5rem; margin: 4px 0 0 0; font-weight: 800;">""" + th_t + """</p>
-    </div>
-    """
-
     with col1:
-        st.markdown(card_html_1, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <p class="metric-label">최고 도달 온도</p>
+            <p class="metric-value">{max_t} ℃</p>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.markdown(card_html_2, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <p class="metric-label">사용 후 최종 온도</p>
+            <p class="metric-value">{final_t} ℃</p>
+        </div>
+        """, unsafe_allow_html=True)
     with col3:
-        st.markdown(card_html_3, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <p class="metric-label">쓰로틀링 시작</p>
+            <p class="metric-value">{th_t}</p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # 꺾은선 그래프 출력
+    # 꺾은선 그래프 (소프트 인디고 & 파스텔 레드 기준선)
     df = pd.DataFrame({
         "시간(분)": range(int(time_usage) + 1),
         "예상 온도(℃)": temp_history,
@@ -160,22 +184,19 @@ try:
     df.set_index("시간(분)", inplace=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    # 파란색 (온도 변화 선), 빨간색 (위험 기준선)
-    st.line_chart(df, color=["#2563EB", "#EF4444"])
+    st.line_chart(df, color=["#6366F1", "#F87171"])
     
     # 6. 경고 메시지 및 기기/앱별 맞춤 쿨링 가이드
     if throttling_time != -1:
-        warning_msg = "🚨 **경고!** 사용 시작 **" + str(throttling_time) + "분** 후 " + device_type.split()[0] + " 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 시작됩니다."
+        warning_msg = f"🚨 **경고!** 사용 시작 **{throttling_time}분** 후 {device_type.split()[0]} 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 시작됩니다."
         st.error(warning_msg)
         
         with st.expander("❄️ 조건별 맞춤형 쿨링 가이드 보기", expanded=True):
-            # 기기 종류 가이드
             if "태블릿" in device_type:
-                st.write("• **📱 태블릿/패드 방열:** 거치대를 사용해 후면 알루미늄/글래스 바디 전체에 공기가 통하도록 띄워주면 방열 효과가 극대화됩니다.")
+                st.write("• **📱 태블릿/패드 방열:** 거치대를 사용해 후면 전체에 공기가 통하도록 띄워주면 방열 효과가 극대화됩니다.")
             else:
                 st.write("• **📱 스마트폰 방열:** 열 방출을 막는 밀착형 파우치나 두꺼운 범퍼 케이스를 벗겨주세요.")
 
-            # 앱 종류별 가이드
             if "메신저" in app_type:
                 st.write("• **💬 메신저/SNS:** 미디어 자동 다운로드 옵션을 끄고 백그라운드 동영상 자동 재생을 제한하세요.")
             elif "웹서핑" in app_type:
@@ -185,9 +206,8 @@ try:
             else:
                 st.write("• **🎮 3D 게임:** 게임 옵션에서 그래픽 품질 및 프레임(FPS)을 하향 조정하세요.")
             
-            # 밝기 및 충전 가이드
             if brightness >= 70:
-                st.write("• **☀️ 화면 밝기 (" + str(brightness) + "%):** 디스플레이 면적이 넓을수록 발열이 커집니다. 밝기를 낮춰주세요.")
+                st.write(f"• **☀️ 화면 밝기 ({brightness}%):** 디스플레이 면적이 넓을수록 발열이 커집니다. 밝기를 낮춰주세요.")
             if "충전" in charge_type and "미충전" not in charge_type:
                 st.write("• **🔌 충전 중 사용:** 고사양 작업이나 영상 시청 시 충전 케이블을 분리하는 것이 기기 수명과 발열 제어에 좋습니다.")
 
