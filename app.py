@@ -1,96 +1,133 @@
 import streamlit as st
 import pandas as pd
 
-# 1. 페이지 기본 설정
+# 1. 페이지 기본 설정 및 모던 UI CSS 정의
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 배경색이 확실히 눈에 띄도록 CSS 강제 적용 (!important)
 st.markdown("""
     <style>
-    /* 메인 화면 배경색 (확연히 구분되는 파스텔 블루) */
+    /* 1. 전체 배경: 눈이 편안한 연한 슬레이트 블루-그레이 */
     [data-testid="stAppViewContainer"] {
-        background-color: #EBF2FE !important;
+        background-color: #F8FAFC !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* 사이드바 배경색 (톤다운된 슬레이트 블루) */
+    /* 2. 사이드바 스타일링 */
     [data-testid="stSidebar"] {
-        background-color: #DCE7F9 !important;
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E2E8F0;
     }
-
-    /* 메인 타이틀 스타일 */
-    .main-header {
-        font-size: 2.1rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 4px;
-    }
-    .sub-header {
-        font-size: 0.95rem;
-        color: #475569;
+    
+    /* 3. 상단 히어로 헤더 배너 */
+    .hero-banner {
+        background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+        border: 1px solid #C7D2FE;
+        border-radius: 16px;
+        padding: 24px 20px;
         text-align: center;
         margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.05);
     }
-    .sidebar-title {
-        font-size: 0.95rem;
+    .hero-tag {
+        display: inline-block;
+        background-color: #6366F1;
+        color: #FFFFFF;
+        font-size: 0.7rem;
         font-weight: 700;
-        color: #1E293B;
-        margin-top: 15px;
-        margin-bottom: 5px;
-    }
-    
-    /* 파스텔 배경 위에서 선명하게 도드라지는 순백색 카드 */
-    .metric-card {
-        background-color: #FFFFFF !important;
-        border: 1px solid #CBD5E1;
-        border-left: 5px solid #2563EB !important;
+        padding: 3px 10px;
         border-radius: 12px;
-        padding: 14px 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+    .hero-title {
+        font-size: 1.85rem;
+        font-weight: 800;
+        color: #1E1B4B;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+    .hero-sub {
+        font-size: 0.9rem;
+        color: #4338CA;
+        margin-top: 6px;
+        margin-bottom: 0;
+        font-weight: 500;
+    }
+
+    /* 4. 입체감 있는 결과 분석 지표 카드 */
+    .metric-card {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-top: 4px solid #6366F1;
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        transition: all 0.2s ease-in-out;
     }
     .metric-label {
         color: #64748B;
-        font-size: 0.82rem;
-        margin: 0;
+        font-size: 0.8rem;
         font-weight: 600;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
     }
     .metric-value {
         color: #0F172A;
-        font-size: 1.45rem;
-        margin: 4px 0 0 0;
+        font-size: 1.55rem;
         font-weight: 800;
+        margin: 6px 0 0 0;
+        letter-spacing: -0.02em;
+    }
+    
+    /* 5. 사이드바 그룹 섹션 바 */
+    .sidebar-label {
+        display: inline-block;
+        background-color: #F1F5F9;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        margin-top: 14px;
+        margin-bottom: 6px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="main-header">📱 모바일 AP 온도 시뮬레이터</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">기기 종류, 충전 상태, 사용 조건에 따른 실시간 발열 분석 대시보드</p>', unsafe_allow_html=True)
+# 헤더 히어로 배너 출력
+st.markdown("""
+    <div class="hero-banner">
+        <span class="hero-tag">REAL-TIME SIMULATOR</span>
+        <h1 class="hero-title">📱 모바일 AP 온도 시뮬레이터</h1>
+        <p class="hero-sub">기기 특성, 충전 조건, 화면 밝기에 따른 반도체 발열과 성능 제한 예측</p>
+    </div>
+""", unsafe_allow_html=True)
 
-# 2. 사이드바 구성 (기기 선택, 앱 종류, 환경 조건)
+# 2. 사이드바 컨트롤 구성
 with st.sidebar:
-    st.header("⚙️ 기기 및 환경 설정")
+    st.header("⚙️ 시뮬레이션 환경 설정")
     st.divider()
     
-    device_type = st.radio("기기 종류", ["스마트폰 📱", "태블릿 / 패드 📱"])
+    st.markdown('<span class="sidebar-label">기기 유형</span>', unsafe_allow_html=True)
+    device_type = st.radio("기기 종류", ["스마트폰 📱", "태블릿 / 패드 📱"], label_visibility="collapsed")
     
-    st.markdown('<p class="sidebar-title">🌡️ 주변 환경 및 사용 시간</p>', unsafe_allow_html=True)
+    st.markdown('<span class="sidebar-label">주변 환경 & 사용 시간</span>', unsafe_allow_html=True)
     temp_env = st.slider("현재 주변 온도 (℃)", min_value=-10.0, max_value=40.0, value=25.0, step=1.0)
     time_usage = st.slider("예상 사용 시간 (분)", min_value=10, max_value=300, value=60, step=10)
     
-    st.markdown('<p class="sidebar-title">⚡ 세부 사용 조건</p>', unsafe_allow_html=True)
+    st.markdown('<span class="sidebar-label">앱 실행 & 충전 상태</span>', unsafe_allow_html=True)
     app_type = st.radio("실행할 앱 종류", ["메신저 / SNS 💬", "단순 웹서핑 🌐", "고화질 동영상 시청 🎬", "3D 고사양 게임 🎮"])
     brightness = st.slider("화면 밝기 (%)", min_value=10, max_value=100, value=70, step=10)
     charge_type = st.selectbox("충전 상태", ["미충전 🔋", "일반 충전 🔌", "고속 충전 ⚡"])
 
     st.divider()
-    st.caption("💡 설정을 변경하면 오른쪽 결과가 실시간으로 업데이트됩니다.")
+    st.caption("💡 옵션을 조작하면 오른쪽 대시보드가 실시간으로 업데이트됩니다.")
 
-# 3. 시뮬레이션 알고리즘 가중치 설정
+# 3. 발열 모델링 연산 알고리즘
 if "태블릿" in device_type:
-    device_mult = 0.75  # 넓은 방열 면적으로 발열 축소
-    cooling_factor = 0.10
+    device_mult = 0.75     # 넓은 방열 면적으로 온도 상승 완화
+    cooling_factor = 0.10  # 대형 방열판 효과
 else:
     device_mult = 1.00
     cooling_factor = 0.075
@@ -115,7 +152,7 @@ else:
 
 total_increase = (base_increase + brightness_increase + charge_increase) * device_mult
 
-# 4. 실시간 온도로직 시뮬레이션
+# 4. 시뮬레이션 계산 진행
 current_temp = temp_env
 temp_history = [current_temp]
 throttling_time = -1
@@ -137,24 +174,38 @@ try:
             
         temp_history.append(current_temp)
 
-    # 5. 결과 대시보드 출력
-    st.divider()
-    st.subheader("📊 시뮬레이션 분석 대시보드")
+    # 5. 대시보드 결과 리포트
+    st.subheader("📊 시뮬레이션 분석 결과")
     
-    max_t = str(round(max(temp_history), 1))
-    final_t = str(round(temp_history[-1], 1))
-    th_t = str(throttling_time) + " 분" if throttling_time != -1 else "안전 (미발생)"
+    max_t = f"{max(temp_history):.1f}"
+    final_t = f"{temp_history[-1]:.1f}"
+    th_t = f"{throttling_time} 분" if throttling_time != -1 else "안전 (미발생)"
 
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown(f'<div class="metric-card"><p class="metric-label">최고 도달 온도</p><p class="metric-value">{max_t} ℃</p></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="metric-card">
+                <p class="metric-label">최고 도달 온도</p>
+                <p class="metric-value">{max_t} ℃</p>
+            </div>
+        ''', unsafe_allow_html=True)
     with col2:
-        st.markdown(f'<div class="metric-card"><p class="metric-label">사용 후 최종 온도</p><p class="metric-value">{final_t} ℃</p></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="metric-card">
+                <p class="metric-label">최종 상태 온도</p>
+                <p class="metric-value">{final_t} ℃</p>
+            </div>
+        ''', unsafe_allow_html=True)
     with col3:
-        st.markdown(f'<div class="metric-card"><p class="metric-label">쓰로틀링 시작</p><p class="metric-value">{th_t}</p></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="metric-card">
+                <p class="metric-label">쓰로틀링 시작</p>
+                <p class="metric-value">{th_t}</p>
+            </div>
+        ''', unsafe_allow_html=True)
     
-    # 꺾은선 그래프
+    # 온도 추이 꺾은선 그래프
     df = pd.DataFrame({
         "시간(분)": range(int(time_usage) + 1),
         "예상 온도(℃)": temp_history,
@@ -163,12 +214,11 @@ try:
     df.set_index("시간(분)", inplace=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.line_chart(df, color=["#2563EB", "#EF4444"])
+    st.line_chart(df, color=["#6366F1", "#F87171"])
     
-    # 6. 경고 메시지 및 쿨링 가이드
+    # 6. 알림 메시지 및 스마트 쿨링 가이드
     if throttling_time != -1:
-        warning_msg = f"🚨 **경고!** 사용 시작 **{throttling_time}분** 후 {device_type.split()[0]} 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 시작됩니다."
-        st.error(warning_msg)
+        st.error(f"🚨 **경고!** 사용 시작 **{throttling_time}분** 후 {device_type.split()[0]} 온도가 45℃를 초과하여 쓰로틀링(성능 제한)이 작동합니다.")
         
         with st.expander("❄️ 조건별 맞춤형 쿨링 가이드 보기", expanded=True):
             if "태블릿" in device_type:
@@ -195,4 +245,4 @@ try:
         st.success("✨ **안정적인 상태입니다.** 현재 설정한 기기 조건에서는 성능 저하 없이 원활하게 구동 가능합니다.")
 
 except Exception as e:
-    st.error("데이터 처리 중 오류가 발생했습니다. 환경 설정 값을 다시 확인해 주세요.")
+    st.error("데이터 처리 중 오류가 발생했습니다. 환경 설정 값을 확인해 주세요.")
