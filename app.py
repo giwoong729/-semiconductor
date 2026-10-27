@@ -4,24 +4,24 @@ import pandas as pd
 # 1. 페이지 기본 설정
 st.set_page_config(page_title="AP 온도 시뮬레이터", page_icon="📱", layout="centered")
 
-# 은은한 파스텔 배경색 및 커스텀 CSS 적용 (조절 바 색상 강제 지정은 제거)
+# 배경색이 확실히 눈에 띄도록 CSS 강제 적용 (!important)
 st.markdown("""
     <style>
-    /* 전체 메인 화면 배경색 (은은한 쿨 그레이/파스텔 슬레이트) */
-    .stApp {
-        background-color: #F8FAFC;
+    /* 메인 화면 배경색 (확연히 구분되는 파스텔 블루) */
+    [data-testid="stAppViewContainer"] {
+        background-color: #EBF2FE !important;
     }
     
-    /* 사이드바 배경색 */
+    /* 사이드바 배경색 (톤다운된 슬레이트 블루) */
     [data-testid="stSidebar"] {
-        background-color: #F1F5F9;
+        background-color: #DCE7F9 !important;
     }
 
-    /* 메인 타이틀 그라데이션 */
+    /* 메인 타이틀 스타일 */
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%);
+        background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
@@ -29,26 +29,26 @@ st.markdown("""
     }
     .sub-header {
         font-size: 0.95rem;
-        color: #64748B;
+        color: #475569;
         text-align: center;
         margin-bottom: 25px;
     }
     .sidebar-title {
         font-size: 0.95rem;
         font-weight: 700;
-        color: #334155;
+        color: #1E293B;
         margin-top: 15px;
         margin-bottom: 5px;
     }
     
-    /* 은은한 흰색 메트릭 카드 (배경과 대비감 확보) */
+    /* 파스텔 배경 위에서 선명하게 도드라지는 순백색 카드 */
     .metric-card {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-left: 5px solid #6366F1;
+        background-color: #FFFFFF !important;
+        border: 1px solid #CBD5E1;
+        border-left: 5px solid #2563EB !important;
         border-radius: 12px;
         padding: 14px 16px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .metric-label {
         color: #64748B;
@@ -57,7 +57,7 @@ st.markdown("""
         font-weight: 600;
     }
     .metric-value {
-        color: #1E293B;
+        color: #0F172A;
         font-size: 1.45rem;
         margin: 4px 0 0 0;
         font-weight: 800;
@@ -89,7 +89,7 @@ with st.sidebar:
 
 # 3. 시뮬레이션 알고리즘 가중치 설정
 if "태블릿" in device_type:
-    device_mult = 0.75  # 태블릿은 넓은 방열 면적으로 발열 감소
+    device_mult = 0.75  # 넓은 방열 면적으로 발열 축소
     cooling_factor = 0.10
 else:
     device_mult = 1.00
@@ -163,7 +163,7 @@ try:
     df.set_index("시간(분)", inplace=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.line_chart(df, color=["#6366F1", "#F87171"])
+    st.line_chart(df, color=["#2563EB", "#EF4444"])
     
     # 6. 경고 메시지 및 쿨링 가이드
     if throttling_time != -1:
